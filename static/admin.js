@@ -1,308 +1,223 @@
-function app() {
+function adminApp() {
     return {
-        youtubeUrl: '',
-        videoDetails: null,
-        transcript: '',
-        summarizedTranscript: '',  // Add this line
-        summaries: null,
-        videoId: null,
+        // State
+        scheduledPosts: [],
+        videoData: {},
+        systemStatus: {
+            scheduler_alive: false,
+            video_count: 0,
+            post_status_counts: {},
+            current_time_utc: null
+        },
+        loading: false,
+        showDetailsModal: false,
+        showVideoModal: false,
+        showRawModal: false,
+        selectedPost: null,
+        selectedVideoId: null,
+        selectedVideoData: null,
+        videoIdSearch: '',
+        rawJsonText: '',
         error: '',
         successMessage: '',
-        loadingTranscript: false,
-        loadingSummary: false,
-        hasTranscript: false,
-        discordConfigured: false,
-        scheduleTime: '',
-        showScheduleModal: false,
-        customTweetText: '',
-        customTweetUrl: '',
-        customTweetHashtags: '',
-        // videoDetails: {},
-        selectedPlatforms: {
-            telegram: false,
-            discord: false,
-            linkedin: false,
-            instagram: false,
-            twitter: false
-        },
 
-        get hasSelectedPlatforms() {
-            return Object.values(this.selectedPlatforms).some(Boolean);
-        },
-
-        async getTranscript() {
-            if (!this.youtubeUrl) {
-                this.error = 'Please enter a YouTube URL';
-                return;
-            }
-
-            this.loadingTranscript = true;
+        // Lifecycle helpers
+        async refreshAll() {
+            this.loading = true;
             this.error = '';
-            this.successMessage = '';
-
             try {
-                const response = await fetch('/get_transcript', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ youtube_url: this.youtubeUrl })
-                });
-
-                const data = await response.json();
-
-                if (data.success) {
-                    this.videoDetails = data.video_details;
-                    this.transcript = data.transcript;
-                    this.summarizedTranscript = data.summarized_transcript;  // Add this line
-                    this.videoId = data.video_id;
-                    this.videoDetails.video_id = data.video_id;
-                    this.hasTranscript = true;
-                    this.successMessage = 'Transcript generated successfully! Click "Get Summaries" to create social media posts.';
-                } else {
-                    this.error = data.error || 'Failed to get transcript';
-                }
-            } catch (error) {
-                this.error = 'Network error: ' + error.message;
+                await Promise.all([this.loadSystemStatus(), this.loadScheduledPosts(), this.loadVideoData()]);
+                this.successMessage = 'Refreshed dashboard';
+                setTimeout(() => (this.successMessage = ''), 2000);
+            } catch (e) {
+                this.error = 'Failed to refresh dashboard: ' + (e.message || e);
             } finally {
-                this.loadingTranscript = false;
+                this.loading = false;
+            }
+        },
+        // --- utility helpers used by template ---
+        // Format ISO time into a readable string in a configured timezone (Toronto)
+        formatDateTime(isoStr, timeZone = 'America/Toronto') {
+            if (!isoStr) return 'Unknown';
+            try {
+                // If the string looks like a naive ISO (no timezone) we assume UTC and append Z
+                // Example naive formats: 2024-01-15T14:30 or 2024-01-15T14:30:00
+                if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2})?$/.test(isoStr)) {
+                    isoStr = isoStr + 'Z';
+                }
+
+                const dt = new Date(isoStr);
+                if (isNaN(dt)) return isoStr;
+
+                // Use Intl.DateTimeFormat with the requested timezone for consistent display
+                const opts = {
+                    timeZone,
+                    year: 'numeric', month: 'short', day: 'numeric',
+                    hour: 'numeric', minute: '2-digit', second: undefined,
+                };
+                return new Intl.DateTimeFormat(undefined, opts).format(dt);
+            } catch (e) {
+                return isoStr;
             }
         },
 
-        async getSummary() {
-            if (!this.videoId) {
-                this.error = 'Please get transcript first';
+        // --- admin API actions ---
+        async loadScheduledPosts() {
+            try {
+                const res = await fetch('/admin/api/scheduled_posts');
+                const data = await res.json();
+                if (data.success) {
+                    this.scheduledPosts = data.posts || [];
+                } else {
+                    this.error = data.error || 'Failed to load scheduled posts';
+                }
+            } catch (e) {
+                this.error = 'Network error loading scheduled posts: ' + (e.message || e);
+            }
+        },
+
+        async loadVideoData() {
+            try {
+                const res = await fetch('/admin/api/video_data');
+                const data = await res.json();
+                if (data.success) {
+                    this.videoData = data.video_data || {};
+                } else {
+                    this.error = data.error || 'Failed to load video data';
+                }
+            } catch (e) {
+                this.error = 'Network error loading video data: ' + (e.message || e);
+            }
+        },
+
+        async loadSystemStatus() {
+            try {
+                const res = await fetch('/admin/api/system_status');
+                const data = await res.json();
+                if (data.success) {
+                    this.systemStatus = data.system_status || this.systemStatus;
+                } else {
+                    this.error = data.error || 'Failed to load system status';
+                }
+            } catch (e) {
+                this.error = 'Network error loading system status: ' + (e.message || e);
+            }
+        },
+
+        // run one scheduled post right now
+        async runPostNow(postId) {
+            this.loading = true;
+            try {
+                const res = await fetch(`/admin/api/run_post_now/${postId}`, { method: 'POST' });
+                const data = await res.json();
+                if (data.success) {
+                    this.successMessage = data.message || 'Post executed';
+                } else {
+                    this.error = data.error || 'Failed to run post';
+                }
+            } catch (e) {
+                this.error = 'Network error: ' + (e.message || e);
+            } finally {
+                this.loading = false;
+                await this.refreshAll();
+            }
+        },
+
+        // view a specific video JSON/details via id
+        viewVideoJson(videoId) {
+            this.selectedVideoId = videoId;
+            this.selectedVideoData = this.videoData[videoId] || null;
+            if (!this.selectedVideoData) {
+                this.error = `Video id ${videoId} not found.`;
+                this.showVideoModal = false;
                 return;
             }
+            this.showVideoModal = true;
+        },
 
-            this.loadingSummary = true;
+        // lookup by id from the search input
+        lookupVideoById() {
+            const id = (this.videoIdSearch || '').trim();
+            if (!id) {
+                this.error = 'Please enter a video id to search';
+                return;
+            }
             this.error = '';
-
-            try {
-                const response = await fetch('/get_summary', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        video_id: this.videoId
-                    })
-                });
-
-                const data = await response.json();
-
-                if (data.success) {
-                    this.summaries = data.summaries;
-                    this.discordConfigured = data.discord_configured || false;
-                    this.successMessage = 'Social media summaries generated successfully!';
-                } else {
-                    this.error = data.error || 'Failed to generate summaries';
-                }
-            } catch (error) {
-                this.error = 'Network error: ' + error.message;
-            } finally {
-                this.loadingSummary = false;
-            }
-        },
-
-        async postToSocial(platform) {
-            if (!this.videoId) {
-                this.error = 'No video data available';
-                return;
-            }
-
-            try {
-                const response = await fetch('/post_to_social', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        video_id: this.videoId,
-                        platform: platform
-                    })
-                });
-
-                const data = await response.json();
-
-                if (data.success) {
-                    if (platform === 'twitter' && data.twitter_url) {
-                        // Open Twitter in new tab for manual posting
-                        window.open(data.twitter_url, '_blank');
-                        this.successMessage = 'Twitter share page opened! Complete your post in the new tab.';
-                    } else {
-                        this.successMessage = `Posted to ${platform} successfully!`;
-                    }
-
-                    if (data.discord_message) {
-                        await this.copyToClipboard(data.discord_message);
-                        this.successMessage += ' Discord message copied to clipboard!';
-                    }
-                } else {
-                    this.error = data.error || `Failed to post to ${platform}`;
-                }
-            } catch (error) {
-                this.error = 'Network error: ' + error.message;
-            }
-        },
-
-        async schedulePost(platform) {
-            if (!this.videoId) {
-                this.error = 'No video data available';
-                return;
-            }
-
-            if (!this.scheduleTime) {
-                this.error = 'Please select a schedule time first';
-                return;
-            }
-
-            try {
-                console.log('Scheduling post with time:', this.scheduleTime);
-
-                const response = await fetch('/schedule_post', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        video_id: this.videoId,
-                        platform: platform,
-                        schedule_time: this.scheduleTime
-                    })
-                });
-
-                const data = await response.json();
-
-                if (data.success) {
-                    const scheduleTime = new Date(this.scheduleTime);
-                    this.successMessage = `✅ Post scheduled for ${platform} at ${scheduleTime.toLocaleString()}!`;
-                    console.log('Schedule response:', data);
-                } else {
-                    this.error = data.error || `Failed to schedule post for ${platform}`;
-                    console.error('Schedule error:', data.error);
-                }
-            } catch (error) {
-                this.error = 'Network error: ' + error.message;
-                console.error('Network error:', error);
-            }
-        },
-
-        async scheduleMultiplePosts() {
-            if (!this.videoId) {
-                this.error = 'No video data available';
-                return;
-            }
-
-            if (!this.scheduleTime) {
-                this.error = 'Please select a schedule time';
-                return;
-            }
-
-            if (!this.hasSelectedPlatforms) {
-                this.error = 'Please select at least one platform';
-                return;
-            }
-
-            this.showScheduleModal = false;
-            const scheduledPlatforms = [];
-            const errors = [];
-
-            for (const platform in this.selectedPlatforms) {
-                if (this.selectedPlatforms[platform]) {
-                    try {
-                        console.log(`Scheduling ${platform} with time:`, this.scheduleTime);
-
-                        const response = await fetch('/schedule_post', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                            },
-                            body: JSON.stringify({
-                                video_id: this.videoId,
-                                platform: platform,
-                                schedule_time: this.scheduleTime
-                            })
-                        });
-
-                        const data = await response.json();
-                        if (data.success) {
-                            scheduledPlatforms.push(platform);
-                            console.log(`Scheduled ${platform}:`, data);
-                        } else {
-                            errors.push(`${platform}: ${data.error}`);
-                            console.error(`Failed to schedule ${platform}:`, data.error);
-                        }
-                    } catch (error) {
-                        errors.push(`${platform}: ${error.message}`);
-                        console.error(`Failed to schedule ${platform}:`, error);
-                    }
-                }
-            }
-
-            if (scheduledPlatforms.length > 0) {
-                const scheduleTime = new Date(this.scheduleTime);
-                this.successMessage = `✅ Scheduled posts for ${scheduledPlatforms.join(', ')} at ${scheduleTime.toLocaleString()}!`;
-                // Reset selections
-                for (const platform in this.selectedPlatforms) {
-                    this.selectedPlatforms[platform] = false;
-                }
-
-                if (errors.length > 0) {
-                    this.successMessage += ` (Some failed: ${errors.join('; ')})`;
-                }
+            if (this.videoData[id]) {
+                this.viewVideoJson(id);
             } else {
-                this.error = 'Failed to schedule any posts: ' + errors.join('; ');
+                this.error = `Video id ${id} not found in video data.`;
             }
         },
 
-        async generateCustomTweet() {
-            if (!this.customTweetText) {
-                this.error = 'Please enter tweet text';
-                return;
-            }
-
+        // show raw JSON for system_status, scheduled_posts, video_data
+        viewRaw(kind) {
             try {
-                const response = await fetch('/custom_tweet', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        text: this.customTweetText,
-                        url: this.customTweetUrl,
-                        hashtags: this.customTweetHashtags
-                    })
-                });
-
-                const data = await response.json();
-
-                if (data.success) {
-                    // Open Twitter share URL in new tab
-                    window.open(data.twitter_url, '_blank');
-                    this.successMessage = 'Twitter share page opened! Complete your post in the new tab.';
-
-                    // Clear form
-                    this.customTweetText = '';
-                    this.customTweetUrl = '';
-                    this.customTweetHashtags = '';
-                } else {
-                    this.error = data.error || 'Failed to generate Twitter share link';
+                let obj;
+                switch (kind) {
+                    case 'system_status':
+                        obj = this.systemStatus; break;
+                    case 'scheduled_posts':
+                        obj = this.scheduledPosts; break;
+                    case 'video_data':
+                        obj = this.videoData; break;
+                    default:
+                        obj = { error: 'unknown kind' };
                 }
-            } catch (error) {
-                this.error = 'Network error: ' + error.message;
+                this.rawJsonText = JSON.stringify(obj, null, 2);
+                this.showRawModal = true;
+            } catch (e) {
+                this.error = 'Failed to build raw JSON: ' + (e.message || e);
+            }
+        },
+
+        async deletePost(postId) {
+            if (!confirm('Delete scheduled post #' + postId + '?')) return;
+            this.loading = true;
+            try {
+                const res = await fetch(`/admin/api/delete_scheduled_post/${postId}`, { method: 'DELETE' });
+                const data = await res.json();
+                if (data.success) {
+                    this.successMessage = data.message || 'Post deleted';
+                } else {
+                    this.error = data.error || 'Failed to delete post';
+                }
+            } catch (e) {
+                this.error = 'Network error: ' + (e.message || e);
+            } finally {
+                this.loading = false;
+                await this.refreshAll();
+            }
+        },
+
+        async deleteVideo(videoId) {
+            if (!confirm('Delete video data ' + videoId + '?')) return;
+            this.loading = true;
+            try {
+                const res = await fetch(`/admin/api/delete_video/${videoId}`, { method: 'DELETE' });
+                const data = await res.json();
+                if (data.success) {
+                    this.successMessage = data.message || 'Video deleted';
+                } else {
+                    this.error = data.error || 'Failed to delete video';
+                }
+            } catch (e) {
+                this.error = 'Network error: ' + (e.message || e);
+            } finally {
+                this.loading = false;
+                await this.refreshAll();
             }
         },
 
         formatDuration(seconds) {
-            if (!seconds) return 'Unknown';
+            if (!seconds && seconds !== 0) return 'Unknown';
             const minutes = Math.floor(seconds / 60);
-            const remainingSeconds = seconds % 60;
+            const remainingSeconds = Math.floor(seconds % 60);
             return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
         },
 
         formatViews(views) {
-            if (!views) return 'Unknown';
+            if (!views && views !== 0) return 'Unknown';
             if (views >= 1000000) {
                 return (views / 1000000).toFixed(1) + 'M';
             } else if (views >= 1000) {
@@ -315,10 +230,68 @@ function app() {
             try {
                 await navigator.clipboard.writeText(text);
                 this.successMessage = 'Copied to clipboard!';
-                setTimeout(() => this.successMessage = '', 3000);
-            } catch (error) {
-                this.error = 'Failed to copy to clipboard';
+                setTimeout(() => (this.successMessage = ''), 2000);
+            } catch (e) {
+                this.error = 'Failed to copy to clipboard: ' + (e.message || e);
             }
+        },
+
+        // small helpers to style badges in template
+        getStatusColor(status) {
+            switch ((status || '').toLowerCase()) {
+                case 'scheduled':
+                    return 'bg-purple-100 text-purple-700';
+                case 'posted':
+                    return 'bg-green-100 text-green-700';
+                case 'posting':
+                    return 'bg-yellow-100 text-yellow-700';
+                case 'failed':
+                    return 'bg-red-100 text-red-700';
+                default:
+                    return 'bg-gray-100 text-gray-700';
+            }
+        },
+
+        getStatusBadgeClass(status) {
+            switch ((status || '').toLowerCase()) {
+                case 'scheduled':
+                    return 'bg-purple-100 text-purple-700';
+                case 'posted':
+                    return 'bg-green-100 text-green-700';
+                case 'posting':
+                    return 'bg-yellow-100 text-yellow-700';
+                case 'failed':
+                    return 'bg-red-100 text-red-700';
+                default:
+                    return 'bg-gray-100 text-gray-700';
+            }
+        },
+
+        getPlatformBadgeClass(platform) {
+            switch ((platform || '').toLowerCase()) {
+                case 'telegram':
+                    return 'bg-blue-100 text-blue-700';
+                case 'discord':
+                    return 'bg-indigo-100 text-indigo-700';
+                case 'twitter':
+                    return 'bg-sky-100 text-sky-700';
+                case 'linkedin':
+                    return 'bg-blue-50 text-blue-700';
+                case 'instagram':
+                    return 'bg-pink-50 text-pink-700';
+                default:
+                    return 'bg-gray-50 text-gray-700';
+            }
+        },
+
+        showPostDetails(post) {
+            this.selectedPost = post;
+            this.showDetailsModal = true;
+        },
+
+        // initialize on load
+        init() {
+            this.refreshAll();
         }
-    }
+    };
 }

@@ -1,15 +1,13 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Dashboard - YouTube Summarizer</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+{% extends "base.html" %}
+
+{% block title %}Admin Dashboard - YouTube Summarizer{% endblock %}
+
+{% block extra_head %}
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-</head>
-<body class="bg-gray-100 min-h-screen">
-    <div class="container mx-auto px-4 py-8" x-data="adminApp()">
+{% endblock %}
+
+{% block content %}
+    <div class="container mx-auto px-4 py-8" x-data="adminApp()" x-init="init()">
         <!-- Header -->
         <div class="flex justify-between items-center mb-8">
             <div>
@@ -33,7 +31,7 @@
                 <div class="flex items-center justify-between">
                     <div>
                         <h3 class="text-lg font-semibold text-gray-700">Scheduler</h3>
-                        <p x-text="systemStatus.scheduler_alive ? 'Running' : 'Stopped'"
+                        <p x-text="systemStatus.scheduler_alive ? 'Running' : 'Stopped'" 
                            :class="systemStatus.scheduler_alive ? 'text-green-600' : 'text-red-600'"
                            class="text-sm"></p>
                     </div>
@@ -57,7 +55,7 @@
                 <div class="flex items-center justify-between">
                     <div>
                         <h3 class="text-lg font-semibold text-gray-700">Scheduled Posts</h3>
-                        <p x-text="Object.values(systemStatus.post_status_counts).reduce((a, b) => a + b, 0)"
+                        <p x-text="Object.values(systemStatus.post_status_counts).reduce((a, b) => a + b, 0)" 
                            class="text-2xl font-bold text-purple-600"></p>
                     </div>
                     <i class="fas fa-clock text-2xl text-gray-400"></i>
@@ -68,8 +66,8 @@
             <div class="bg-white rounded-lg shadow-md p-6 border-l-4 border-yellow-500">
                 <div class="flex items-center justify-between">
                     <div>
-                        <h3 class="text-lg font-semibold text-gray-700">Server Time (UTC)</h3>
-                        <p x-text="formatDateTime(systemStatus.current_time_utc)" class="text-sm text-yellow-600"></p>
+                        <h3 class="text-lg font-semibold text-gray-700">Server Time (America/Toronto)</h3>
+                        <p x-text="formatDateTime(systemStatus.current_time_utc, 'America/Toronto')" class="text-sm text-yellow-600"></p>
                     </div>
                     <i class="fas fa-clock text-2xl text-gray-400"></i>
                 </div>
@@ -86,6 +84,13 @@
                         <div class="text-sm capitalize" x-text="status"></div>
                     </div>
                 </template>
+            </div>
+            <!-- Raw JSON quick-view -->
+            <div class="mt-4 flex items-center space-x-3">
+                <span class="text-sm text-gray-500">Admin raw views:</span>
+                <button @click="viewRaw('system_status')" class="px-3 py-1 bg-yellow-200 text-yellow-800 rounded text-sm">System Status JSON</button>
+                <button @click="viewRaw('scheduled_posts')" class="px-3 py-1 bg-purple-200 text-purple-800 rounded text-sm">Scheduled Posts JSON</button>
+                <button @click="viewRaw('video_data')" class="px-3 py-1 bg-blue-200 text-blue-800 rounded text-sm">Video Data JSON</button>
             </div>
         </div>
 
@@ -107,7 +112,7 @@
                             <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">ID</th>
                             <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Platform</th>
                             <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Video ID</th>
-                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Schedule Time (UTC)</th>
+                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Schedule Time (Toronto)</th>
                             <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
                             <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
                         </tr>
@@ -117,29 +122,29 @@
                             <tr>
                                 <td class="px-4 py-2 text-sm" x-text="post.id"></td>
                                 <td class="px-4 py-2 text-sm">
-                                    <span class="px-2 py-1 rounded-full text-xs font-medium"
+                                    <span class="px-2 py-1 rounded-full text-xs font-medium" 
                                           :class="getPlatformBadgeClass(post.platform)"
                                           x-text="post.platform"></span>
                                 </td>
                                 <td class="px-4 py-2 text-sm font-mono" x-text="post.video_id"></td>
                                 <td class="px-4 py-2 text-sm" x-text="formatDateTime(post.schedule_time_utc)"></td>
                                 <td class="px-4 py-2 text-sm">
-                                    <span class="px-2 py-1 rounded-full text-xs font-medium"
+                                    <span class="px-2 py-1 rounded-full text-xs font-medium" 
                                           :class="getStatusBadgeClass(post.status)"
                                           x-text="post.status"></span>
                                 </td>
                                 <td class="px-4 py-2 text-sm">
                                     <div class="flex space-x-2">
-                                        <button @click="runPostNow(post.id)"
+                                        <button @click="runPostNow(post.id)" 
                                                 x-show="post.status === 'scheduled'"
                                                 class="px-2 py-1 bg-green-500 text-white rounded text-xs hover:bg-green-600">
                                             Run Now
                                         </button>
-                                        <button @click="deletePost(post.id)"
+                                        <button @click="deletePost(post.id)" 
                                                 class="px-2 py-1 bg-red-500 text-white rounded text-xs hover:bg-red-600">
                                             Delete
                                         </button>
-                                        <button @click="showPostDetails(post)"
+                                        <button @click="showPostDetails(post)" 
                                                 class="px-2 py-1 bg-blue-500 text-white rounded text-xs hover:bg-blue-600">
                                             Details
                                         </button>
@@ -161,9 +166,13 @@
         <div class="bg-white rounded-lg shadow-md p-6 mb-8">
             <div class="flex justify-between items-center mb-4">
                 <h2 class="text-xl font-bold text-gray-800">Video Data</h2>
-                <button @click="loadVideoData()" class="px-3 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 text-sm">
+                <div class="flex items-center space-x-2">
+                    <input x-model="videoIdSearch" type="text" placeholder="Search by video id" class="px-3 py-2 border rounded text-sm" />
+                    <button @click="lookupVideoById()" class="px-3 py-2 bg-indigo-500 text-white rounded hover:bg-indigo-600 text-sm">Find</button>
+                    <button @click="loadVideoData()" class="px-3 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 text-sm">
                     <i class="fas fa-sync-alt mr-1"></i>Refresh
-                </button>
+                    </button>
+                </div>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -181,6 +190,10 @@
                             <div>Views: <span x-text="formatViews(videoInfo.details.view_count)"></span></div>
                             <div>Transcript: <span x-text="videoInfo.transcript.length + ' chars'"></span></div>
                             <div>Summaries: <span x-text="Object.keys(videoInfo.summaries || {}).length"></span></div>
+                            <div class="mt-2 flex items-center space-x-2">
+                                <button @click="viewVideoJson(videoId)" class="px-2 py-1 text-xs bg-slate-100 border rounded">View JSON</button>
+                                <button @click="copyToClipboard(JSON.stringify(videoInfo, null, 2))" class="px-2 py-1 text-xs bg-slate-100 border rounded">Copy JSON</button>
+                            </div>
                         </div>
                     </div>
                 </template>
@@ -200,7 +213,7 @@
                             <i class="fas fa-times"></i>
                         </button>
                     </div>
-
+                    
                     <div x-show="selectedPost" class="space-y-4">
                         <div class="grid grid-cols-2 gap-4">
                             <div>
@@ -220,25 +233,64 @@
                                 <p x-text="selectedPost.attempt_count" class="text-sm text-gray-900"></p>
                             </div>
                         </div>
-
+                        
                         <div>
-                            <label class="block text-sm font-medium text-gray-700">Schedule Time (UTC)</label>
-                            <p x-text="formatDateTime(selectedPost.schedule_time_utc)" class="text-sm text-gray-900"></p>
+                            <label class="block text-sm font-medium text-gray-700">Schedule Time (Toronto)</label>
+                            <p x-text="formatDateTime(selectedPost.schedule_time_utc, 'America/Toronto')" class="text-sm text-gray-900"></p>
                         </div>
-
+                        
                         <div>
-                            <label class="block text-sm font-medium text-gray-700">Created At</label>
-                            <p x-text="formatDateTime(selectedPost.created_at)" class="text-sm text-gray-900"></p>
+                            <label class="block text-sm font-medium text-gray-700">Created At (Toronto)</label>
+                            <p x-text="formatDateTime(selectedPost.created_at, 'America/Toronto')" class="text-sm text-gray-900"></p>
                         </div>
-
+                        
                         <div x-show="selectedPost.last_result">
                             <label class="block text-sm font-medium text-gray-700">Last Result</label>
-                            <pre class="text-xs bg-gray-100 p-2 rounded overflow-x-auto"
+                            <pre class="text-xs bg-gray-100 p-2 rounded overflow-x-auto" 
                                  x-text="selectedPost.last_result"></pre>
                         </div>
                     </div>
                 </div>
+                
+            </div>
+        </div>
 
+        <!-- Video JSON / Details Modal -->
+        <div x-show="showVideoModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div class="bg-white rounded-lg shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+                <div class="p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-xl font-bold text-gray-800">Video Details — <span class="font-mono" x-text="selectedVideoId"></span></h3>
+                        <button @click="showVideoModal = false" class="text-gray-500 hover:text-gray-700"><i class="fas fa-times"></i></button>
+                    </div>
+
+                    <div x-show="selectedVideoData">
+                        <div class="mb-4"><strong>Title:</strong> <span x-text="selectedVideoData.details.title"></span></div>
+                        <div class="mb-4"><strong>Uploader:</strong> <span x-text="selectedVideoData.details.uploader"></span></div>
+                        <div class="mb-4"><strong>Duration:</strong> <span x-text="formatDuration(selectedVideoData.details.duration)"></span></div>
+
+                        <div class="mt-4">
+                            <label class="block text-sm font-medium text-gray-700">Raw JSON</label>
+                            <pre class="bg-gray-100 rounded p-2 text-xs whitespace-pre-wrap overflow-x-auto max-h-96" x-text="JSON.stringify(selectedVideoData, null, 2)"></pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Raw JSON viewer modal -->
+        <div x-show="showRawModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div class="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+                <div class="p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-xl font-bold text-gray-800">Raw JSON Viewer</h3>
+                        <div class="flex items-center space-x-2">
+                            <button @click="copyToClipboard(rawJsonText)" class="px-3 py-1 text-sm bg-gray-100 border rounded">Copy</button>
+                            <button @click="showRawModal = false" class="text-gray-500 hover:text-gray-700"><i class="fas fa-times"></i></button>
+                        </div>
+                    </div>
+                    <pre class="bg-gray-900 text-white rounded p-4 text-xs overflow-x-auto max-h-[70vh] whitespace-pre-wrap" x-text="rawJsonText"></pre>
+                </div>
             </div>
         </div>
 
@@ -254,7 +306,9 @@
         </div>
     </div>
 
+{% endblock %}
+
+{% block scripts %}
     <!-- Load the admin JavaScript -->
     <script src="/static/admin.js"></script>
-</body>
-</html>
+{% endblock %}

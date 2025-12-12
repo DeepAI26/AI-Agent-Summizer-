@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+
+{% block title %}Features - YouTube Video Summarizer{% endblock %}
+
+{% block content %}
+    <!-- Main Content -->
+    <div class="container mx-auto px-4 py-12">
+        <!-- Header -->
+        <div class="text-center mb-12">
+            <h1 class="text-5xl font-bold text-gray-800 mb-4">Powerful Features</h1>
+            <p class="text-xl text-gray-600">Everything you need to transcribe, summarize, and share video content</p>
+        </div>
+
+        <!-- Features Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
+            <!-- Feature 1: Video Transcription -->
+            <div class="bg-white rounded-lg shadow-md p-8 hover:shadow-lg transition-shadow">
+                <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4">
+                    <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                </div>
+                <h3 class="text-xl font-bold text-gray-800 mb-2">Video Transcription</h3>
+                <p class="text-gray-600">Automatically extract complete transcripts from YouTube videos using advanced AI speech recognition. Get accurate text transcriptions in seconds.</p>
+            </div>
+
+            <!-- Feature 2: AI Summarization -->
+            <div class="bg-white rounded-lg shadow-md p-8 hover:shadow-lg transition-shadow">
+                <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mb-4">
+                    <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                    </svg>
+                </div>
+                <h3 class="text-xl font-bold text-gray-800 mb-2">Smart Summarization</h3>
+                <p class="text-gray-600">Convert long video transcripts into concise, meaningful summaries. Our AI identifies key points and generates summaries optimized for readability.</p>
+            </div>
+
+            <!-- Feature 3: Social Media Posts -->
+            <div class="bg-white rounded-lg shadow-md p-8 hover:shadow-lg transition-shadow">
+                <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mb-4">
+                    <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"></path>
+                    </svg>
+                </div>
+                <h3 class="text-xl font-bold text-gray-800 mb-2">Multi-Platform Posts</h3>
+                <p class="text-gray-600">Generate platform-optimized summaries for Telegram, Discord, Twitter, LinkedIn and more. Each post is tailored to the platform's best practices.</p>
+            </div>
+
+            <!-- Feature 4: Direct Posting -->
+            <div class="bg-white rounded-lg shadow-md p-8 hover:shadow-lg transition-shadow">
+                <div class="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center mb-4">
+                    <svg class="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
+                    </svg>
+                </div>
+                <h3 class="text-xl font-bold text-gray-800 mb-2">One-Click Posting</h3>
+                <p class="text-gray-600">Post directly to your social media accounts with a single click. Or copy summaries to clipboard for manual posting with full control.</p>
+            </div>
+
+            <!-- Feature 5: Scheduled Posts -->
+            <div class="bg-white rounded-lg shadow-md p-8 hover:shadow-lg transition-shadow">
+                <div class="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center mb-4">
+                    <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                </div>
+                <h3 class="text-xl font-bold text-gray-800 mb-2">Schedule for Later</h3>
+                <p class="text-gray-600">Schedule posts to go live at the perfect time. Plan your content calendar and let the system handle automatic posting.</p>
+            </div>
+
+            <!-- Feature 6: Admin Dashboard -->
+            <div class="bg-white rounded-lg shadow-md p-8 hover:shadow-lg transition-shadow">
+                <div class="w-12 h-12 bg-indigo-100 rounded-lg flex items-center justify-center mb-4">
+                    <svg class="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                    </svg>
+                </div>
+                <h3 class="text-xl font-bold text-gray-800 mb-2">Admin Dashboard</h3>
+                <p class="text-gray-600">Monitor system performance, manage scheduled posts, view analytics, and access advanced settings. Full control over your content strategy.</p>
+            </div>
+        </div>
+
+        <!-- Benefits Section -->
+        <div class="bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg shadow-lg p-12 mb-12 text-white">
+            <h2 class="text-3xl font-bold mb-8">Why Choose YouTube Summarizer?</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                <div>
+                    <h4 class="font-bold text-lg mb-2">⚡ Fast Processing</h4>
+                    <p class="text-blue-100">Get transcripts and summaries in seconds, not minutes</p>
+                </div>
+                <div>
+                    <h4 class="font-bold text-lg mb-2">🎯 Accurate AI</h4>
+                    <p class="text-blue-100">State-of-the-art transcription and summarization models</p>
+                </div>
+                <div>
+                    <h4 class="font-bold text-lg mb-2">🔗 All Platforms</h4>
+                    <p class="text-blue-100">Post to Telegram, Discord, Twitter, LinkedIn and more</p>
+                </div>
+                <div>
+                    <h4 class="font-bold text-lg mb-2">🛡️ Secure & Private</h4>
+                    <p class="text-blue-100">Your data is encrypted and never shared with third parties</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- CTA Section -->
+        <div class="text-center">
+            <h2 class="text-3xl font-bold text-gray-800 mb-4">Ready to Get Started?</h2>
+            <p class="text-gray-600 mb-8 text-lg">Start transcribing and summarizing videos today</p>
+            <a href="/" class="inline-block px-8 py-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-semibold text-lg">
+                Launch the App
+            </a>
+        </div>
+    </div>
+
+{% endblock %}

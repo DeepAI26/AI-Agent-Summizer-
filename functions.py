@@ -1,23 +1,18 @@
 import os
 from dotenv import load_dotenv
-# from pydub import AudioSegment
 import yt_dlp
 import whisper
 from transformers import pipeline, BartForConditionalGeneration, BartTokenizer
 import torch
-from flask import Flask, render_template, request, jsonify
-import tempfile
-import traceback
 import requests
 import json
-import hashlib
 import datetime
 import sqlite3
 import threading
 import time
 from typing import Optional
 import logging
-import urllib.parse  # needed for encoding share URLs
+import urllib.parse
 
 # Set up logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -62,25 +57,26 @@ def check_environment():
     if not TELEGRAM_BOT_TOKEN:
         missing_vars.append('TELEGRAM_BOT_TOKEN')
     else:
-        print(f"✅ TELEGRAM_BOT_TOKEN: {TELEGRAM_BOT_TOKEN[:10]}...{TELEGRAM_BOT_TOKEN[-10:]}")
+        print(f"[OK] TELEGRAM_BOT_TOKEN: {TELEGRAM_BOT_TOKEN[:10]}...{TELEGRAM_BOT_TOKEN[-10:]}")
 
     if not TELEGRAM_CHAT_ID:
         missing_vars.append('TELEGRAM_CHAT_ID')
     else:
-        print(f"✅ TELEGRAM_CHAT_ID: {TELEGRAM_CHAT_ID}")
+        print(f"[OK] TELEGRAM_CHAT_ID: {TELEGRAM_CHAT_ID}")
 
     if not discord_configured:
         missing_vars.append('DISCORD_BOT_CONFIG')
 
     if missing_vars:
-        print("⚠️  Warning: The following environment variables are not set:")
+        print("[WARNING] The following environment variables are not set:")
         for var in missing_vars:
             print(f"   - {var}")
         if 'DISCORD_BOT_CONFIG' in missing_vars:
             print("   Discord posting will use copy-to-clipboard")
-        print("⚠️  Social media posting will not work without these variables.")
+        print("[WARNING] Social media posting will not work without these variables.")
     else:
-        print("✅ All environment variables are set!")
+        print("[OK] All environment variables are set!")
+
 
 check_environment()
 
@@ -576,6 +572,29 @@ def generate_twitter_post(summary, video_title, video_details, video_id):
 # -------------------------------
 VIDEO_DATA_FILE = "video_data.json"
 
+# -------------------------------
+# User store to track users who logged in and last_seen
+# -------------------------------
+USER_DB_FILE = "users.json"
+
+
+def load_user_db():
+    try:
+        if os.path.exists(USER_DB_FILE):
+            with open(USER_DB_FILE, 'r') as f:
+                return json.load(f)
+    except Exception as e:
+        logger.error(f"Error loading user db: {e}")
+    return {}
+
+
+def save_user_db(db):
+    try:
+        with open(USER_DB_FILE, 'w') as f:
+            json.dump(db, f)
+    except Exception as e:
+        logger.error(f"Error saving user db: {e}")
+
 
 def load_video_data():
     """Load video data from JSON file"""
@@ -817,4 +836,3 @@ def scheduled_poster_worker(poll_interval_seconds=30):
 scheduler_thread = threading.Thread(target=scheduled_poster_worker, daemon=True)
 scheduler_thread.start()
 logger.info("✅ Scheduler thread started and running")
-

@@ -26,8 +26,37 @@ function app() {
             twitter: false
         },
 
+        // auth state (populated from server or /me)
+        currentUser: null,
+        isAuthenticated: false,
+
         get hasSelectedPlatforms() {
             return Object.values(this.selectedPlatforms).some(Boolean);
+        },
+
+        // initialize auth state from server or window.INITIAL_USER
+        initAuth() {
+            try {
+                if (!this.isAuthenticated) {
+                    // gentle reminder - actions will work but saving/scheduling needs sign-in
+                    this.successMessage = 'Note: you are not signed-in. Sign in to enable account features.';
+                }
+                if (window && window.INITIAL_USER) {
+                    this.currentUser = window.INITIAL_USER;
+                    this.isAuthenticated = !!this.currentUser;
+                    return;
+                }
+
+                fetch('/me', { headers: { 'Content-Type': 'application/json' } })
+                    .then(r => { if (!r.ok) throw r; return r.json(); })
+                    .then(data => {
+                        if (data && data.user) {
+                            this.currentUser = data.user;
+                            this.isAuthenticated = true;
+                        }
+                    })
+                    .catch(() => {});
+            } catch (e) {}
         },
 
         async getTranscript() {
@@ -59,6 +88,9 @@ function app() {
                     this.videoDetails.video_id = data.video_id;
                     this.hasTranscript = true;
                     this.successMessage = 'Transcript generated successfully! Click "Get Summaries" to create social media posts.';
+                    if (this.isAuthenticated) {
+                        this.successMessage += ' Your transcripts will be saved to your account.';
+                    }
                 } else {
                     this.error = data.error || 'Failed to get transcript';
                 }
@@ -157,6 +189,11 @@ function app() {
                 return;
             }
 
+            if (!this.isAuthenticated) {
+                this.error = 'Please sign in to schedule posts to your account';
+                return;
+            }
+
             try {
                 console.log('Scheduling post with time:', this.scheduleTime);
 
@@ -196,6 +233,11 @@ function app() {
 
             if (!this.scheduleTime) {
                 this.error = 'Please select a schedule time';
+                return;
+            }
+
+            if (!this.isAuthenticated) {
+                this.error = 'Please sign in to schedule posts to your account';
                 return;
             }
 
@@ -291,6 +333,39 @@ function app() {
                 }
             } catch (error) {
                 this.error = 'Network error: ' + error.message;
+            }
+        },
+
+        async saveSummary() {
+            if (!this.isAuthenticated) {
+                this.error = 'Please sign in to save summaries to your account.';
+                return;
+            }
+            if (!this.videoId) {
+                this.error = 'No video selected to save.';
+                return;
+            }
+
+            const textToSave = this.summarizedTranscript || (this.summaries && this.summaries.full) || '';
+            if (!textToSave) {
+                this.error = 'Nothing to save yet. Generate a summary first.';
+                return;
+            }
+
+            try {
+                const resp = await fetch('/save_summary', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ video_id: this.videoId, text: textToSave })
+                });
+                const data = await resp.json();
+                if (data.success) {
+                    this.successMessage = data.message || 'Saved!';
+                } else {
+                    this.error = data.error || 'Failed to save summary';
+                }
+            } catch (err) {
+                this.error = 'Network error: ' + err.message;
             }
         },
 

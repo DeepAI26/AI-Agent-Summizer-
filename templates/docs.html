@@ -1,0 +1,306 @@
+{% extends "base.html" %}
+
+{% block title %}Documentation - YouTube Video Summarizer{% endblock %}
+
+{% block content %}
+    <!-- Main Content -->
+    <div class="container mx-auto px-4 py-12">
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+            <!-- Sidebar Navigation -->
+            <div class="lg:col-span-1">
+                <div class="bg-white rounded-lg shadow-md p-6 sticky top-24">
+                    <h3 class="font-bold text-lg text-gray-800 mb-4">Documentation</h3>
+                    <nav class="space-y-2">
+                        <a href="#getting-started" class="block px-3 py-2 rounded hover:bg-blue-50 text-blue-600 font-semibold">Getting Started</a>
+                        <a href="#how-to-use" class="block px-3 py-2 rounded hover:bg-blue-50 text-gray-700">How to Use</a>
+                        <a href="#transcription" class="block px-3 py-2 rounded hover:bg-blue-50 text-gray-700">Transcription</a>
+                        <a href="#summarization" class="block px-3 py-2 rounded hover:bg-blue-50 text-gray-700">Summarization</a>
+                        <a href="#social-media" class="block px-3 py-2 rounded hover:bg-blue-50 text-gray-700">Social Media Posting</a>
+                        <a href="#scheduling" class="block px-3 py-2 rounded hover:bg-blue-50 text-gray-700">Scheduling Posts</a>
+                        <a href="#admin" class="block px-3 py-2 rounded hover:bg-blue-50 text-gray-700">Admin Dashboard</a>
+                        <a href="#faq" class="block px-3 py-2 rounded hover:bg-blue-50 text-gray-700">FAQ</a>
+                    </nav>
+                </div>
+            </div>
+
+            <!-- Main Documentation Content -->
+            <div class="lg:col-span-3 space-y-12">
+                <!-- Getting Started -->
+                <section id="getting-started" class="bg-white rounded-lg shadow-md p-8">
+                    <h2 class="text-3xl font-bold text-gray-800 mb-4">Getting Started</h2>
+                    <p class="text-gray-600 mb-4">Welcome to YouTube Video Summarizer! This guide will help you get up and running in minutes.</p>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <h3 class="text-lg font-semibold text-gray-800 mb-2">Step 1: Sign In</h3>
+                            <p class="text-gray-600">Click the "Sign in with Google" button to authenticate with your Google account. This is required to access all features.</p>
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-semibold text-gray-800 mb-2">Step 2: Paste a YouTube URL</h3>
+                            <p class="text-gray-600">Enter any YouTube video URL into the input field. The app supports standard YouTube URLs and short URLs (youtu.be).</p>
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-semibold text-gray-800 mb-2">Step 3: Get the Transcript</h3>
+                            <p class="text-gray-600">Click "Get Transcript" to extract the full transcript from the video. This uses advanced speech recognition AI.</p>
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-semibold text-gray-800 mb-2">Step 4: Generate Summaries</h3>
+                            <p class="text-gray-600">Click "Get Summaries" to generate platform-specific summaries optimized for Telegram, Discord, Twitter, and LinkedIn.</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- How to Use -->
+                <section id="how-to-use" class="bg-white rounded-lg shadow-md p-8">
+                    <h2 class="text-3xl font-bold text-gray-800 mb-4">How to Use</h2>
+                    
+                    <div class="space-y-6">
+                        <div class="border-l-4 border-blue-500 pl-4">
+                            <h3 class="text-xl font-semibold text-gray-800 mb-2">Main Interface Overview</h3>
+                            <p class="text-gray-600 mb-2">The main app interface has the following sections:</p>
+                            <ul class="list-disc list-inside text-gray-600 space-y-1">
+                                <li><strong>URL Input:</strong> Paste your YouTube video URL here</li>
+                                <li><strong>Video Details:</strong> Shows title, channel, duration, and view count</li>
+                                <li><strong>Transcript:</strong> Full text transcript of the video</li>
+                                <li><strong>Social Media Posts:</strong> Generated summaries for each platform</li>
+                            </ul>
+                        </div>
+
+                        <div class="border-l-4 border-green-500 pl-4">
+                            <h3 class="text-xl font-semibold text-gray-800 mb-2">Copy & Share</h3>
+                            <p class="text-gray-600">Each summary has a "Copy Text" button that copies it to your clipboard. You can then paste it directly into your social media posts.</p>
+                        </div>
+
+                        <div class="border-l-4 border-purple-500 pl-4">
+                            <h3 class="text-xl font-semibold text-gray-800 mb-2">Direct Posting</h3>
+                            <p class="text-gray-600">Use the "Post to [Platform]" buttons to post directly to your social media accounts (requires authentication with those services).</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Transcription -->
+                <section id="transcription" class="bg-white rounded-lg shadow-md p-8">
+                    <h2 class="text-3xl font-bold text-gray-800 mb-4">Video Transcription</h2>
+                    
+                    <p class="text-gray-600 mb-4">The transcription feature converts video audio into text using AI-powered speech recognition.</p>
+
+                    <div class="bg-blue-50 border-l-4 border-blue-500 p-4 mb-4">
+                        <h4 class="font-semibold text-gray-800 mb-2">💡 How It Works</h4>
+                        <p class="text-gray-700">The app downloads the audio from the YouTube video and processes it through Whisper (OpenAI's speech recognition model) to generate an accurate transcript.</p>
+                    </div>
+
+                    <div class="space-y-4">
+                        <div>
+                            <h4 class="font-semibold text-gray-800">Processing Time</h4>
+                            <p class="text-gray-600">Transcription time depends on video length. A 10-minute video typically takes 30-60 seconds to process.</p>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold text-gray-800">Accuracy</h4>
+                            <p class="text-gray-600">The Whisper model has ~94% accuracy for English audio. Accuracy may vary for non-English content or audio with background noise.</p>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold text-gray-800">Supported Languages</h4>
+                            <p class="text-gray-600">English is primarily supported. The model can handle other languages but may have reduced accuracy.</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Summarization -->
+                <section id="summarization" class="bg-white rounded-lg shadow-md p-8">
+                    <h2 class="text-3xl font-bold text-gray-800 mb-4">Summarization</h2>
+                    
+                    <p class="text-gray-600 mb-4">Summaries are generated using state-of-the-art AI models to extract the most important information from transcripts.</p>
+
+                    <div class="bg-green-50 border-l-4 border-green-500 p-4 mb-4">
+                        <h4 class="font-semibold text-gray-800 mb-2">🤖 AI Model Used</h4>
+                        <p class="text-gray-700">Facebook's BART (Bidirectional and Auto-Regressive Transformers) model is used for high-quality summarization.</p>
+                    </div>
+
+                    <div class="space-y-4">
+                        <div>
+                            <h4 class="font-semibold text-gray-800">Platform-Specific Summaries</h4>
+                            <p class="text-gray-600">Each social media platform receives a summary optimized for its format:</p>
+                            <ul class="list-disc list-inside text-gray-600 mt-2 space-y-1">
+                                <li><strong>Telegram:</strong> Medium-length, informative summaries</li>
+                                <li><strong>Discord:</strong> Concise, engaging summaries with emojis</li>
+                                <li><strong>Twitter:</strong> Short, punchy tweets (limited characters)</li>
+                                <li><strong>LinkedIn:</strong> Professional, detailed summaries</li>
+                            </ul>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold text-gray-800">Edit Summaries</h4>
+                            <p class="text-gray-600">You can edit any generated summary directly in the text area before posting or copying.</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Social Media Posting -->
+                <section id="social-media" class="bg-white rounded-lg shadow-md p-8">
+                    <h2 class="text-3xl font-bold text-gray-800 mb-4">Social Media Posting</h2>
+                    
+                    <div class="space-y-6">
+                        <div>
+                            <h3 class="text-lg font-semibold text-gray-800 mb-2">Supported Platforms</h3>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div class="border border-gray-200 rounded p-3">
+                                    <h4 class="font-semibold text-blue-600">Telegram</h4>
+                                    <p class="text-sm text-gray-600">Post directly to Telegram channels with one click (requires bot token)</p>
+                                </div>
+                                <div class="border border-gray-200 rounded p-3">
+                                    <h4 class="font-semibold text-indigo-600">Discord</h4>
+                                    <p class="text-sm text-gray-600">Send summaries to Discord webhooks or channels</p>
+                                </div>
+                                <div class="border border-gray-200 rounded p-3">
+                                    <h4 class="font-semibold text-red-600">Twitter</h4>
+                                    <p class="text-sm text-gray-600">Post tweets directly to your account (requires authentication)</p>
+                                </div>
+                                <div class="border border-gray-200 rounded p-3">
+                                    <h4 class="font-semibold text-blue-700">LinkedIn</h4>
+                                    <p class="text-sm text-gray-600">Share professional summaries to your LinkedIn profile</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <h3 class="text-lg font-semibold text-gray-800 mb-2">Two Ways to Post</h3>
+                            <div class="space-y-3">
+                                <div class="bg-yellow-50 border-l-4 border-yellow-500 p-4">
+                                    <h4 class="font-semibold text-gray-800">1. Direct Posting</h4>
+                                    <p class="text-gray-600">Click the "Post to [Platform]" button to send the summary directly. The system handles authentication and posting.</p>
+                                </div>
+                                <div class="bg-yellow-50 border-l-4 border-yellow-500 p-4">
+                                    <h4 class="font-semibold text-gray-800">2. Copy & Paste</h4>
+                                    <p class="text-gray-600">Click "Copy Text" to copy the summary to your clipboard, then paste it into your social media app manually for full control.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Scheduling -->
+                <section id="scheduling" class="bg-white rounded-lg shadow-md p-8">
+                    <h2 class="text-3xl font-bold text-gray-800 mb-4">Scheduling Posts</h2>
+                    
+                    <p class="text-gray-600 mb-4">Schedule your social media posts to go live at a specific time, and let the system handle automatic posting.</p>
+
+                    <div class="space-y-4">
+                        <div>
+                            <h3 class="text-lg font-semibold text-gray-800 mb-2">How to Schedule</h3>
+                            <ol class="list-decimal list-inside space-y-2 text-gray-600">
+                                <li>Generate your summaries</li>
+                                <li>Select a platform and choose "Schedule for Later"</li>
+                                <li>Pick the date and time you want the post to go live</li>
+                                <li>Confirm - the system will post automatically at the scheduled time</li>
+                            </ol>
+                        </div>
+
+                        <div class="bg-purple-50 border-l-4 border-purple-500 p-4">
+                            <h4 class="font-semibold text-gray-800 mb-2">📅 Timezone</h4>
+                            <p class="text-gray-700">All scheduled times are in your local timezone. Make sure to set the correct timezone in your settings.</p>
+                        </div>
+
+                        <div>
+                            <h3 class="text-lg font-semibold text-gray-800 mb-2">Manage Scheduled Posts</h3>
+                            <p class="text-gray-600">Visit the Admin Dashboard to view all scheduled posts, edit them, or cancel scheduling.</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Admin Dashboard -->
+                <section id="admin" class="bg-white rounded-lg shadow-md p-8">
+                    <h2 class="text-3xl font-bold text-gray-800 mb-4">Admin Dashboard</h2>
+                    
+                    <p class="text-gray-600 mb-4">The Admin Dashboard provides an overview of system activity, statistics, and management tools.</p>
+
+                    <div class="space-y-6">
+                        <div>
+                            <h3 class="text-lg font-semibold text-gray-800 mb-2">Key Features</h3>
+                            <div class="space-y-2">
+                                <div class="flex items-start gap-3">
+                                    <span class="text-blue-600 font-bold mt-1">📊</span>
+                                    <div>
+                                        <h4 class="font-semibold text-gray-800">System Status</h4>
+                                        <p class="text-gray-600">View real-time CPU, memory usage, and API availability</p>
+                                    </div>
+                                </div>
+                                <div class="flex items-start gap-3">
+                                    <span class="text-green-600 font-bold mt-1">📅</span>
+                                    <div>
+                                        <h4 class="font-semibold text-gray-800">Scheduled Posts</h4>
+                                        <p class="text-gray-600">View all upcoming scheduled posts and manage them</p>
+                                    </div>
+                                </div>
+                                <div class="flex items-start gap-3">
+                                    <span class="text-purple-600 font-bold mt-1">📹</span>
+                                    <div>
+                                        <h4 class="font-semibold text-gray-800">Video History</h4>
+                                        <p class="text-gray-600">See all videos that have been processed with their details</p>
+                                    </div>
+                                </div>
+                                <div class="flex items-start gap-3">
+                                    <span class="text-orange-600 font-bold mt-1">⚙️</span>
+                                    <div>
+                                        <h4 class="font-semibold text-gray-800">Settings</h4>
+                                        <p class="text-gray-600">Configure API keys and system preferences</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- FAQ -->
+                <section id="faq" class="bg-white rounded-lg shadow-md p-8">
+                    <h2 class="text-3xl font-bold text-gray-800 mb-4">Frequently Asked Questions</h2>
+                    
+                    <div class="space-y-4">
+                        <div class="border-b border-gray-200 pb-4">
+                            <h3 class="font-semibold text-gray-800 mb-2">Q: What video sources are supported?</h3>
+                            <p class="text-gray-600">A: Currently, we support YouTube videos. The app can handle standard YouTube URLs and shortened youtu.be links.</p>
+                        </div>
+
+                        <div class="border-b border-gray-200 pb-4">
+                            <h3 class="font-semibold text-gray-800 mb-2">Q: How long does transcription take?</h3>
+                            <p class="text-gray-600">A: Processing time varies based on video length. Most videos are transcribed within 30-120 seconds.</p>
+                        </div>
+
+                        <div class="border-b border-gray-200 pb-4">
+                            <h3 class="font-semibold text-gray-800 mb-2">Q: Can I edit summaries?</h3>
+                            <p class="text-gray-600">A: Yes! All generated summaries can be edited directly in the text area before posting or copying.</p>
+                        </div>
+
+                        <div class="border-b border-gray-200 pb-4">
+                            <h3 class="font-semibold text-gray-800 mb-2">Q: Is my data secure?</h3>
+                            <p class="text-gray-600">A: Yes, all data is encrypted and processed securely. We never share your data with third parties without permission.</p>
+                        </div>
+
+                        <div class="border-b border-gray-200 pb-4">
+                            <h3 class="font-semibold text-gray-800 mb-2">Q: What happens to the videos I process?</h3>
+                            <p class="text-gray-600">A: Videos are downloaded temporarily for processing and deleted afterward. Transcripts and summaries are stored for your reference.</p>
+                        </div>
+
+                        <div class="border-b border-gray-200 pb-4">
+                            <h3 class="font-semibold text-gray-800 mb-2">Q: Can I post to multiple platforms at once?</h3>
+                            <p class="text-gray-600">A: Yes! You can post to multiple platforms by clicking each platform's "Post" button, or schedule posts for later.</p>
+                        </div>
+
+                        <div>
+                            <h3 class="font-semibold text-gray-800 mb-2">Q: What if transcription fails?</h3>
+                            <p class="text-gray-600">A: If a video can't be transcribed, you'll see an error message. This usually means the audio is too unclear or the video format isn't supported.</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Contact Section -->
+                <div class="bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg shadow-lg p-8 text-white">
+                    <h3 class="text-2xl font-bold mb-4">Need Help?</h3>
+                    <p class="mb-6">If you have questions or need support, please reach out to our team or check the FAQ section above.</p>
+                    <a href="/" class="inline-block px-6 py-2 bg-white text-blue-600 rounded-lg hover:bg-blue-50 font-semibold">
+                        Back to App
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+{% endblock %}
