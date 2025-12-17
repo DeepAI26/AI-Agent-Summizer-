@@ -1,0 +1,350 @@
+{% extends "base.html" %}
+
+{% block content %}
+<!-- Search & Automation Interface -->
+<div class="container mx-auto px-4 py-8" x-data="searchApp()" x-init="initApp()">
+
+    <!-- Header -->
+    <div class="text-center mb-8">
+        <h1 class="text-4xl font-bold text-gray-800 mb-2">🔍 YouTube Search & Automation</h1>
+        <p class="text-gray-600">Search YouTube videos by keyword and automate video processing</p>
+    </div>
+
+    <!-- Search Controls Section -->
+    <div class="bg-white rounded-lg shadow-md p-6 mb-6 card-hover">
+        <div class="flex items-center gap-4 mb-4">
+            <div class="flex-1">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Search Keywords</label>
+                <input type="text" 
+                    x-model="searchQuery" 
+                    @keyup.enter="performSearch()"
+                    placeholder="Enter keywords (e.g., 'AI tutorial', 'Python programming'...)"
+                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+            </div>
+            <div class="w-32">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Max Results</label>
+                <select x-model="maxResults" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="5">5</option>
+                    <option value="10" selected>10</option>
+                    <option value="15">15</option>
+                    <option value="20">20</option>
+                    <option value="25">25</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Advanced Filters -->
+        <div x-show="showAdvancedFilters" class="mb-4 p-4 bg-gray-50 rounded-lg">
+            <h3 class="font-semibold text-gray-700 mb-3">Advanced Filters</h3>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Order By</label>
+                    <select x-model="orderBy" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="relevance">Relevance</option>
+                        <option value="date">Upload Date</option>
+                        <option value="viewCount">View Count</option>
+                        <option value="rating">Rating</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Video Duration</label>
+                    <select x-model="videoDuration" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="any">Any</option>
+                        <option value="short">Short (&lt; 4 min)</option>
+                        <option value="medium">Medium (4-20 min)</option>
+                        <option value="long">Long (&gt; 20 min)</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Published After</label>
+                    <input type="date" x-model="publishedAfter" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="flex gap-3">
+            <button @click="performSearch()" 
+                :disabled="loading || !searchQuery"
+                class="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:bg-blue-300 disabled:cursor-not-allowed flex items-center glow">
+                <svg x-show="!loading" class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                </svg>
+                <svg x-show="loading" class="animate-spin h-5 w-5 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <span x-text="loading ? 'Searching...' : 'Search Videos'"></span>
+            </button>
+
+            <button @click="showAdvancedFilters = !showAdvancedFilters" 
+                class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 flex items-center">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path>
+                </svg>
+                <span x-text="showAdvancedFilters ? 'Hide Filters' : 'Advanced Filters'"></span>
+            </button>
+
+            <button @click="saveSearchQuery()" 
+                :disabled="!searchQuery"
+                class="px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 disabled:bg-gray-300 flex items-center">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"></path>
+                </svg>
+                Save Query
+            </button>
+        </div>
+    </div>
+
+    <!-- Saved Queries Section -->
+    <div x-show="savedQueries.length > 0" class="bg-white rounded-lg shadow-md p-6 mb-6">
+        <h2 class="text-xl font-bold text-gray-800 mb-4">💾 Saved Queries</h2>
+        <div class="flex flex-wrap gap-2">
+            <template x-for="query in savedQueries" :key="query.id">
+                <div class="flex items-center bg-purple-50 border border-purple-200 rounded-lg px-3 py-2">
+                    <button @click="loadSavedQuery(query)" class="text-purple-700 hover:text-purple-900 font-medium">
+                        <span x-text="query.name"></span>
+                    </button>
+                    <button @click="deleteSavedQuery(query.id)" class="ml-2 text-red-500 hover:text-red-700">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+            </template>
+        </div>
+    </div>
+
+    <!-- Messages -->
+    <div x-show="error" class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6">
+        <span x-text="error"></span>
+    </div>
+    <div x-show="successMessage" class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-6">
+        <span x-text="successMessage"></span>
+    </div>
+
+    <!-- Results Header -->
+    <div x-show="searchResults.length > 0" class="bg-white rounded-lg shadow-md p-4 mb-6">
+        <div class="flex items-center justify-between">
+            <h2 class="text-xl font-bold text-gray-800">
+                <span x-text="searchResults.length"></span> Results Found
+            </h2>
+            <p class="text-sm text-gray-600">Click "Select & Process" on any video to open it in the main app</p>
+        </div>
+    </div>
+
+    <!-- Search Results Grid -->
+    <div x-show="searchResults.length > 0" class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        <template x-for="video in searchResults" :key="video.videoId">
+            <div class="bg-white rounded-lg shadow-md overflow-hidden card-hover">
+                
+                <!-- Video Thumbnail -->
+                <div class="relative">
+                    <img :src="video.thumbnail" :alt="video.title" class="w-full h-48 object-cover">
+                    <div class="absolute bottom-2 right-2 bg-black bg-opacity-75 text-white px-2 py-1 rounded text-xs">
+                        <span x-text="video.duration"></span>
+                    </div>
+                </div>
+
+                <!-- Video Details -->
+                <div class="p-4">
+                    <h3 class="font-semibold text-gray-800 mb-2 line-clamp-2" x-text="video.title"></h3>
+                    <p class="text-sm text-gray-600 mb-2" x-text="video.channelTitle"></p>
+                    <p class="text-xs text-gray-500 mb-3 line-clamp-2" x-text="video.description"></p>
+                    
+                    <!-- Stats -->
+                    <div class="flex items-center gap-4 text-xs text-gray-500 mb-3">
+                        <span class="flex items-center">
+                            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                            </svg>
+                            <span x-text="formatNumber(video.viewCount)"></span>
+                        </span>
+                        <span x-text="video.publishedAt"></span>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="flex gap-2">
+                        <button @click="processVideo(video)" 
+                            :disabled="video.processing"
+                            class="flex-1 px-3 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:bg-gray-300 text-sm flex items-center justify-center">
+                            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
+                            </svg>
+                            <span x-show="!video.processing">Select & Process</span>
+                            <span x-show="video.processing">Opening...</span>
+                        </button>
+                        <a :href="video.url" 
+                            target="_blank"
+                            class="px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-sm flex items-center justify-center">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+                            </svg>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </template>
+    </div>
+
+    <!-- No Results Message -->
+    <div x-show="searchPerformed && searchResults.length === 0" class="bg-white rounded-lg shadow-md p-12 text-center">
+        <svg class="w-16 h-16 mx-auto text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+        </svg>
+        <h3 class="text-xl font-semibold text-gray-700 mb-2">No results found</h3>
+        <p class="text-gray-600">Try different keywords or adjust your filters</p>
+    </div>
+
+    <!-- Info Box -->
+    <div class="bg-blue-50 border-l-4 border-blue-500 p-6 rounded-lg">
+        <div class="flex items-start">
+            <svg class="w-6 h-6 text-blue-500 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            <div>
+                <h3 class="font-semibold text-blue-900 mb-1">How it works</h3>
+                <p class="text-blue-800 text-sm">Click "Select & Process" on any video to open it in the main app. The video URL will be automatically pasted and processing will begin. You can also select multiple videos and click "Open in Main App" to process the first one.</p>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+function searchApp() {
+    return {
+        // Search parameters
+        searchQuery: '',
+        maxResults: 10,
+        orderBy: 'relevance',
+        videoDuration: 'any',
+        publishedAfter: '',
+        showAdvancedFilters: false,
+
+        // State
+        loading: false,
+        searchPerformed: false,
+        searchResults: [],
+        savedQueries: [],
+
+        // Messages
+        error: '',
+        successMessage: '',
+
+        initApp() {
+            this.loadSavedQueries();
+        },
+
+        async performSearch() {
+            this.loading = true;
+            this.error = '';
+            this.searchPerformed = true;
+            this.searchResults = [];
+
+            try {
+                const response = await fetch('/search', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        query: this.searchQuery,
+                        max_results: this.maxResults,
+                        order: this.orderBy,
+                        video_duration: this.videoDuration,
+                        published_after: this.publishedAfter
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    this.searchResults = data.results.map(video => ({
+                        ...video,
+                        processing: false
+                    }));
+                    this.successMessage = `Found ${this.searchResults.length} videos`;
+                    setTimeout(() => this.successMessage = '', 3000);
+                } else {
+                    this.error = data.error || 'Search failed';
+                }
+            } catch (err) {
+                this.error = 'Network error: ' + err.message;
+            } finally {
+                this.loading = false;
+            }
+        },
+
+        processVideo(video) {
+            // Save video URL to localStorage and redirect to home page
+            localStorage.setItem('selectedVideoUrl', video.url);
+            localStorage.setItem('selectedVideoTitle', video.title);
+            
+            // Show feedback message
+            this.successMessage = `Opening ${video.title} in main app...`;
+            
+            // Redirect to home page after short delay
+            setTimeout(() => {
+                window.location.href = '/';
+            }, 500);
+        },
+
+        saveSearchQuery() {
+            const query = {
+                id: Date.now(),
+                name: this.searchQuery,
+                params: {
+                    query: this.searchQuery,
+                    maxResults: this.maxResults,
+                    orderBy: this.orderBy,
+                    videoDuration: this.videoDuration,
+                    publishedAfter: this.publishedAfter
+                }
+            };
+
+            this.savedQueries.push(query);
+            localStorage.setItem('savedSearchQueries', JSON.stringify(this.savedQueries));
+            this.successMessage = '💾 Query saved!';
+            setTimeout(() => this.successMessage = '', 2000);
+        },
+
+        loadSavedQueries() {
+            const saved = localStorage.getItem('savedSearchQueries');
+            if (saved) {
+                this.savedQueries = JSON.parse(saved);
+            }
+        },
+
+        loadSavedQuery(query) {
+            this.searchQuery = query.params.query;
+            this.maxResults = query.params.maxResults;
+            this.orderBy = query.params.orderBy;
+            this.videoDuration = query.params.videoDuration;
+            this.publishedAfter = query.params.publishedAfter;
+            this.successMessage = `Loaded query: ${query.name}`;
+            setTimeout(() => this.successMessage = '', 2000);
+        },
+
+        deleteSavedQuery(id) {
+            this.savedQueries = this.savedQueries.filter(q => q.id !== id);
+            localStorage.setItem('savedSearchQueries', JSON.stringify(this.savedQueries));
+        },
+
+        formatNumber(num) {
+            if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+            if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+            return num;
+        }
+    }
+}
+</script>
+
+<style>
+.line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+</style>
+{% endblock %}

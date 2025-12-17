@@ -5,7 +5,7 @@ import yt_dlp
 import whisper
 from transformers import pipeline, BartForConditionalGeneration, BartTokenizer
 import torch
-from flask import Flask, render_template, request, jsonify, session, redirect, url_for
+from flask import Flask, render_template, request, jsonify, session, redirect, url_for, g
 import tempfile
 import traceback
 import requests
@@ -19,6 +19,7 @@ from typing import Optional
 from functools import wraps
 import logging
 import urllib.parse  # needed for encoding share URLs
+import re  # for parsing ISO 8601 durations
 
 # Set up logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -37,6 +38,9 @@ DISCORD_BOT_TOKEN = os.getenv('DISCORD_BOT_TOKEN')
 DISCORD_CHANNEL_ID = os.getenv('DISCORD_CHANNEL_ID')
 
 discord_configured = bool(DISCORD_BOT_TOKEN) and bool(DISCORD_CHANNEL_ID)
+
+# Admin PIN for accessing admin dashboard
+ADMIN_PIN = os.getenv('ADMIN_PIN', '1234')
 
 
 # Check if required environment variables are set
@@ -843,9 +847,6 @@ scheduler_thread = threading.Thread(target=scheduled_poster_worker, daemon=True)
 scheduler_thread.start()
 logger.info("✅ Scheduler thread started and running")
 
-
-
-
 # -------------------------------
 # Flask app
 # -------------------------------
@@ -858,6 +859,17 @@ app.secret_key = os.getenv('FLASK_SECRET_KEY', 'dev-secret-key')
 # Optional: allow insecure transport for local development when env var set
 if os.getenv('OAUTHLIB_INSECURE_TRANSPORT') == '1':
     os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
+
+
+# Make authenticated user available in all templates and handlers
+@app.context_processor
+def inject_user():
+    current_user = session.get('user')
+    return {
+        'user': current_user,
+        'logged_in': bool(current_user)
+    }
+
 
 try:
     from authlib.integrations.flask_client import OAuth
@@ -903,6 +915,12 @@ def index():
 def features():
     """Display features page"""
     return render_template("features.html")
+
+
+@app.route("/search_page", methods=["GET"])
+def search_page():
+    """Display YouTube search interface page"""
+    return render_template("search.html")
 
 
 @app.route("/docs", methods=["GET"])
@@ -1252,43 +1270,173 @@ def schedule_post():
         return jsonify({"success": False, "error": f"Scheduling failed: {str(e)}"}), 500
 
 
-@app.route("/search_videos", methods=["POST"])
-def search_videos():
-    """Search YouTube by topic (uses yt_dlp's ytsearch) and return compact results"""
+YOUTUBE_API_KEY = os.getenv("YOUTUBE_API_KEY")
+
+
+@app.route("/search", methods=["POST"])
+def search():
+    """Search YouTube videos with advanced filters"""
     try:
         data = request.json or {}
-        topic = data.get("topic", "").strip()
-        max_results = int(data.get("max_results", 8))
+        query = data.get("query", "").strip()
+        max_results = data.get("max_results", 10)
+        order = data.get("order", "relevance")
+        video_duration = data.get("video_duration", "any")
+        published_after = data.get("published_after", "")
 
-        if not topic:
-            return jsonify({"error": "Missing search topic"}), 400
+        if not query:
+            return jsonify({"success": False, "error": "Missing search query"}), 400
 
-        query = f"ytsearch{max_results}:{topic}"
-        print(f"Searching YouTube for: {topic} (limit {max_results})")
+        if not YOUTUBE_API_KEY:
+            return jsonify({"success": False, "error": "YouTube API key not configured"}), 500
 
-        with yt_dlp.YoutubeDL({"quiet": True}) as ydl:
-            info = ydl.extract_info(query, download=False)
+        # Build YouTube API request
+        url = "https://www.googleapis.com/youtube/v3/search"
+        params = {
+            "part": "snippet",
+            "q": query,
+            "type": "video",
+            "maxResults": min(int(max_results), 25),  # Cap at 25
+            "order": order,
+            "key": YOUTUBE_API_KEY
+        }
 
-        entries = info.get("entries", []) if info else []
+        # Add video duration filter if specified
+        if video_duration and video_duration != "any":
+            params["videoDuration"] = video_duration
 
+        # Add published after filter if specified
+        if published_after:
+            try:
+                # Convert date to RFC 3339 format
+                date_obj = datetime.datetime.strptime(published_after, "%Y-%m-%d")
+                params["publishedAfter"] = date_obj.strftime("%Y-%m-%dT%H:%M:%SZ")
+            except Exception as e:
+                logger.error(f"Invalid date format: {e}")
+
+        logger.info(f"Searching YouTube with params: {params}")
+
+        # Make API request
+        response = requests.get(url, params=params)
+        response.raise_for_status()
+
+        data = response.json()
+
+        # Get video IDs for additional details
+        video_ids = [item["id"]["videoId"] for item in data.get("items", [])]
+
+        # Get video statistics and content details
+        video_details = {}
+        if video_ids:
+            details_url = "https://www.googleapis.com/youtube/v3/videos"
+            details_params = {
+                "part": "contentDetails,statistics",
+                "id": ",".join(video_ids),
+                "key": YOUTUBE_API_KEY
+            }
+            details_response = requests.get(details_url, params=details_params)
+            details_response.raise_for_status()
+
+            for item in details_response.json().get("items", []):
+                video_id = item["id"]
+                duration_iso = item["contentDetails"]["duration"]
+                statistics = item.get("statistics", {})
+
+                # Parse ISO 8601 duration (e.g., PT15M33S -> 15:33)
+                import re
+                duration_match = re.match(r'PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?', duration_iso)
+                hours = int(duration_match.group(1) or 0)
+                minutes = int(duration_match.group(2) or 0)
+                seconds = int(duration_match.group(3) or 0)
+
+                if hours > 0:
+                    duration_str = f"{hours}:{minutes:02d}:{seconds:02d}"
+                else:
+                    duration_str = f"{minutes}:{seconds:02d}"
+
+                video_details[video_id] = {
+                    "duration": duration_str,
+                    "viewCount": int(statistics.get("viewCount", 0)),
+                    "likeCount": int(statistics.get("likeCount", 0))
+                }
+
+        # Format results for frontend
         results = []
-        for e in entries:
+        for item in data.get("items", []):
+            video_id = item["id"]["videoId"]
+            snippet = item["snippet"]
+            details = video_details.get(video_id, {})
+
+            # Format published date
+            try:
+                pub_date = datetime.datetime.strptime(snippet["publishedAt"], "%Y-%m-%dT%H:%M:%SZ")
+                published_str = pub_date.strftime("%b %d, %Y")
+            except:
+                published_str = snippet["publishedAt"]
+
             results.append({
-                "id": e.get("id"),
-                "title": e.get("title"),
-                "uploader": e.get("uploader"),
-                "duration": e.get("duration"),
-                "thumbnail": e.get("thumbnail"),
-                "webpage_url": e.get("webpage_url") or e.get("url")
+                "videoId": video_id,
+                "title": snippet["title"],
+                "description": snippet["description"],
+                "channelTitle": snippet["channelTitle"],
+                "thumbnail": snippet["thumbnails"]["medium"]["url"],
+                "publishedAt": published_str,
+                "url": f"https://www.youtube.com/watch?v={video_id}",
+                "duration": details.get("duration", "N/A"),
+                "viewCount": details.get("viewCount", 0),
+                "likeCount": details.get("likeCount", 0)
             })
 
+        logger.info(f"Found {len(results)} videos")
         return jsonify({"success": True, "results": results})
 
+    except requests.exceptions.HTTPError as e:
+        error_msg = f"YouTube API error: {e.response.text if e.response else str(e)}"
+        logger.error(error_msg)
+        return jsonify({"success": False, "error": error_msg}), 500
     except Exception as e:
-        print(f"Search failed: {e}")
-        print(traceback.format_exc())
-        return jsonify({"error": str(e)}), 500
+        error_msg = f"Search failed: {str(e)}"
+        logger.error(error_msg)
+        logger.exception(e)
+        return jsonify({"success": False, "error": error_msg}), 500
 
+
+# @app.route("/search_videos", methods=["POST"])
+# def search_videos():
+#     """Search YouTube by topic (uses yt_dlp's ytsearch) and return compact results"""
+#     try:
+#         data = request.json or {}
+#         topic = data.get("topic", "").strip()
+#         max_results = int(data.get("max_results", 8))
+
+#         if not topic:
+#             return jsonify({"error": "Missing search topic"}), 400
+
+#         query = f"ytsearch{max_results}:{topic}"
+#         print(f"Searching YouTube for: {topic} (limit {max_results})")
+
+#         with yt_dlp.YoutubeDL({"quiet": True}) as ydl:
+#             info = ydl.extract_info(query, download=False)
+
+#         entries = info.get("entries", []) if info else []
+
+#         results = []
+#         for e in entries:
+#             results.append({
+#                 "id": e.get("id"),
+#                 "title": e.get("title"),
+#                 "uploader": e.get("uploader"),
+#                 "duration": e.get("duration"),
+#                 "thumbnail": e.get("thumbnail"),
+#                 "webpage_url": e.get("webpage_url") or e.get("url")
+#             })
+
+#         return jsonify({"success": True, "results": results})
+
+# except Exception as e:
+#     print(f"Search failed: {e}")
+#     print(traceback.format_exc())
+#     return jsonify({"error": str(e)}), 500
 
 @app.route("/custom_tweet", methods=["POST"])
 def custom_tweet():
@@ -1359,15 +1507,59 @@ def health_check():
 
 
 # -------------------------------
+# Admin PIN Verification
+# -------------------------------
+def admin_pin_required(f):
+    """Decorator to protect admin routes with PIN verification"""
+
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        if 'admin_verified' not in session:
+            return redirect(url_for('admin_login'))
+        return f(*args, **kwargs)
+
+    return decorated
+
+
+@app.route('/admin/login')
+def admin_login():
+    """Admin login page with PIN entry"""
+    return render_template('admin_login.html')
+
+
+@app.route('/admin/verify_pin', methods=['POST'])
+def verify_pin():
+    """Verify admin PIN"""
+    data = request.json or {}
+    pin = data.get('pin', '').strip()
+
+    if pin == ADMIN_PIN:
+        session['admin_verified'] = True
+        session.permanent = True
+        return jsonify({'success': True, 'message': 'PIN verified'})
+    else:
+        return jsonify({'success': False, 'error': 'Invalid PIN'}), 401
+
+
+@app.route('/admin/logout')
+def admin_logout():
+    """Logout from admin"""
+    session.pop('admin_verified', None)
+    return redirect(url_for('admin_login'))
+
+
+# -------------------------------
 # Admin Routes
 # -------------------------------
 @app.route("/admin")
+@admin_pin_required
 def admin():
     """Admin dashboard page"""
     return render_template("admin.html")
 
 
 @app.route("/admin/api/scheduled_posts")
+@admin_pin_required
 def admin_scheduled_posts():
     """API endpoint to get all scheduled posts"""
     try:
@@ -1408,6 +1600,7 @@ def admin_scheduled_posts():
 
 
 @app.route("/admin/api/video_data")
+@admin_pin_required
 def admin_video_data():
     """API endpoint to get all video data"""
     try:
@@ -1419,6 +1612,7 @@ def admin_video_data():
 
 
 @app.route("/admin/api/system_status")
+@admin_pin_required
 def admin_system_status():
     """API endpoint to get system status"""
     try:
@@ -1459,6 +1653,7 @@ def admin_system_status():
 
 
 @app.route("/admin/api/delete_scheduled_post/<int:post_id>", methods=["DELETE"])
+@admin_pin_required
 def delete_scheduled_post(post_id):
     """Delete a scheduled post"""
     try:
@@ -1478,127 +1673,127 @@ def delete_scheduled_post(post_id):
         logger.error(f"Error deleting scheduled post {post_id}: {e}")
         return jsonify({"success": False, "error": str(e)})
 
-    @app.route('/admin/api/user_stats')
-    def admin_user_stats():
-        """Return basic user metrics and recent users list (from users.json)"""
-        try:
-            users = load_user_db()
-            total_users = len(users)
-            now = datetime.datetime.utcnow()
-            # consider active if last_seen within 10 minutes
-            active_threshold = now - datetime.timedelta(minutes=10)
-            active = []
-            for email, rec in users.items():
-                last = rec.get('last_seen')
-                try:
-                    last_dt = datetime.datetime.fromisoformat(last)
-                except Exception:
-                    last_dt = None
-                is_active = last_dt and last_dt >= active_threshold
-                active.append({
-                    'email': email,
-                    'name': rec.get('name'),
-                    'picture': rec.get('picture'),
-                    'last_seen': rec.get('last_seen'),
-                    'active': bool(is_active)
-                })
+    # @app.route('/admin/api/user_stats')
+    # def admin_user_stats():
+    #     """Return basic user metrics and recent users list (from users.json)"""
+    #     try:
+    #         users = load_user_db()
+    #         total_users = len(users)
+    #         now = datetime.datetime.utcnow()
+    #         # consider active if last_seen within 10 minutes
+    #         active_threshold = now - datetime.timedelta(minutes=10)
+    #         active = []
+    #         for email, rec in users.items():
+    #             last = rec.get('last_seen')
+    #             try:
+    #                 last_dt = datetime.datetime.fromisoformat(last)
+    #             except Exception:
+    #                 last_dt = None
+    #             is_active = last_dt and last_dt >= active_threshold
+    #             active.append({
+    #                 'email': email,
+    #                 'name': rec.get('name'),
+    #                 'picture': rec.get('picture'),
+    #                 'last_seen': rec.get('last_seen'),
+    #                 'active': bool(is_active)
+    #             })
 
-            active_count = sum(1 for u in active if u.get('active'))
+    #         active_count = sum(1 for u in active if u.get('active'))
 
-            # sort by last_seen desc for display
-            active_sorted = sorted(active, key=lambda r: r.get('last_seen') or '', reverse=True)
+    #         # sort by last_seen desc for display
+    #         active_sorted = sorted(active, key=lambda r: r.get('last_seen') or '', reverse=True)
 
-            return jsonify({
-                'success': True,
-                'total_users': total_users,
-                'active_count': active_count,
-                'users': active_sorted[:200]
-            })
-        except Exception as e:
-            logger.error(f"Error fetching user stats: {e}")
-            return jsonify({'success': False, 'error': str(e)}), 500
+    #         return jsonify({
+    #             'success': True,
+    #             'total_users': total_users,
+    #             'active_count': active_count,
+    #             'users': active_sorted[:200]
+    #         })
+    #     except Exception as e:
+    #         logger.error(f"Error fetching user stats: {e}")
+    #         return jsonify({'success': False, 'error': str(e)}), 500
 
-    @app.route('/admin/api/users')
-    def admin_users_list():
-        """Paginated user listing for admin UI
+    # @app.route('/admin/api/users')
+    # def admin_users_list():
+    #     """Paginated user listing for admin UI
 
-        Query params:
-          - page (int, default 1)
-          - per_page (int, default 50)
-          - q (string, optional) filter by email or name
-        """
-        try:
-            users = load_user_db()
-            items = []
-            for email, rec in users.items():
-                items.append({
-                    'email': email,
-                    'name': rec.get('name'),
-                    'picture': rec.get('picture'),
-                    'last_seen': rec.get('last_seen')
-                })
+    #     Query params:
+    #       - page (int, default 1)
+    #       - per_page (int, default 50)
+    #       - q (string, optional) filter by email or name
+    #     """
+    #     try:
+    #         users = load_user_db()
+    #         items = []
+    #         for email, rec in users.items():
+    #             items.append({
+    #                 'email': email,
+    #                 'name': rec.get('name'),
+    #                 'picture': rec.get('picture'),
+    #                 'last_seen': rec.get('last_seen')
+    #             })
 
-            q = (request.args.get('q') or '').strip().lower()
-            if q:
-                items = [u for u in items if
-                         q in (u.get('email', '') or '').lower() or q in (u.get('name', '') or '').lower()]
+    #         q = (request.args.get('q') or '').strip().lower()
+    #         if q:
+    #             items = [u for u in items if q in (u.get('email','') or '').lower() or q in (u.get('name','') or '').lower()]
 
-            # pagination
-            page = max(1, int(request.args.get('page') or 1))
-            per_page = min(500, max(1, int(request.args.get('per_page') or 50)))
-            total = len(items)
-            start = (page - 1) * per_page
-            end = start + per_page
-            page_items = items[start:end]
+    #         # pagination
+    #         page = max(1, int(request.args.get('page') or 1))
+    #         per_page = min(500, max(1, int(request.args.get('per_page') or 50)))
+    #         total = len(items)
+    #         start = (page - 1) * per_page
+    #         end = start + per_page
+    #         page_items = items[start:end]
 
-            return jsonify({'success': True, 'page': page, 'per_page': per_page, 'total': total, 'users': page_items})
-        except Exception as e:
-            logger.error(f"Error listing users: {e}")
-            return jsonify({'success': False, 'error': str(e)}), 500
+    #         return jsonify({'success': True, 'page': page, 'per_page': per_page, 'total': total, 'users': page_items})
+    #     except Exception as e:
+    #         logger.error(f"Error listing users: {e}")
+    #         return jsonify({'success': False, 'error': str(e)}), 500
 
-    @app.route('/admin/api/export_users')
-    def admin_export_users():
-        """Export users as CSV. Query params can include q for filtering, format=csv (default)"""
-        try:
-            fmt = (request.args.get('format') or 'csv').lower()
-            users = load_user_db()
+    # @app.route('/admin/api/export_users')
+    # def admin_export_users():
+    #     """Export users as CSV. Query params can include q for filtering, format=csv (default)"""
+    #     try:
+    #         fmt = (request.args.get('format') or 'csv').lower()
+    #         users = load_user_db()
 
-            items = []
-            for email, rec in users.items():
-                items.append({
-                    'email': email,
-                    'name': rec.get('name', ''),
-                    'picture': rec.get('picture', ''),
-                    'last_seen': rec.get('last_seen', '')
-                })
+    #         items = []
+    #         for email, rec in users.items():
+    #             items.append({
+    #                 'email': email,
+    #                 'name': rec.get('name', ''),
+    #                 'picture': rec.get('picture', ''),
+    #                 'last_seen': rec.get('last_seen', '')
+    #             })
 
-            q = (request.args.get('q') or '').strip().lower()
-            if q:
-                items = [u for u in items if q in (u['email'] or '').lower() or q in (u['name'] or '').lower()]
+    #         q = (request.args.get('q') or '').strip().lower()
+    #         if q:
+    #             items = [u for u in items if q in (u['email'] or '').lower() or q in (u['name'] or '').lower()]
 
-            if fmt == 'csv':
-                # build CSV
-                output = io.StringIO()
-                cw = csv.writer(output)
-                cw.writerow(['email', 'name', 'picture', 'last_seen'])
-                for u in items:
-                    cw.writerow([u.get('email', ''), u.get('name', ''), u.get('picture', ''), u.get('last_seen', '')])
-                csv_data = output.getvalue()
-                output.close()
+    #         if fmt == 'csv':
+    #             # build CSV
+    #             output = io.StringIO()
+    #             cw = csv.writer(output)
+    #             cw.writerow(['email', 'name', 'picture', 'last_seen'])
+    #             for u in items:
+    #                 cw.writerow([u.get('email',''), u.get('name',''), u.get('picture',''), u.get('last_seen','')])
+    #             csv_data = output.getvalue()
+    #             output.close()
 
-                resp = Response(csv_data, mimetype='text/csv')
-                resp.headers['Content-Disposition'] = 'attachment; filename=users.csv'
-                return resp
+    #             resp = Response(csv_data, mimetype='text/csv')
+    #             resp.headers['Content-Disposition'] = 'attachment; filename=users.csv'
+    #             return resp
 
-            else:
-                return jsonify({'success': True, 'users': items})
+    #         else:
+    #             return jsonify({'success': True, 'users': items})
 
-        except Exception as e:
-            logger.error(f"Error exporting users: {e}")
-            return jsonify({'success': False, 'error': str(e)}), 500
+    #     except Exception as e:
+    #         logger.error(f"Error exporting users: {e}")
+    #         return jsonify({'success': False, 'error': str(e)}), 500
 
 
 @app.route("/admin/api/update_post_status", methods=["POST"])
+@admin_pin_required
 def update_post_status():
     """Update post status manually"""
     try:
@@ -1618,6 +1813,7 @@ def update_post_status():
 
 
 @app.route("/admin/api/delete_video/<video_id>", methods=["DELETE"])
+@admin_pin_required
 def delete_video(video_id):
     """Delete video data"""
     try:
@@ -1634,6 +1830,7 @@ def delete_video(video_id):
 
 
 @app.route("/admin/api/run_post_now/<int:post_id>", methods=["POST"])
+@admin_pin_required
 def run_post_now(post_id):
     """Run a scheduled post immediately"""
     try:

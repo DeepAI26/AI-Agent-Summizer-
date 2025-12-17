@@ -469,11 +469,6 @@
 {% endblock %}
 
 {% block scripts %}
-        <!-- pass initial user state into client JS so the Alpine app can use it -->
-        <script>
-            window.INITIAL_USER = {{ user|tojson | safe }};
-        </script>
-        <!-- Load the external JavaScript file -->
-        <script src="{{ url_for('static', filename='script.js') }}"></script>
-
+    <!-- Load the external JavaScript file -->
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
 {% endblock %}

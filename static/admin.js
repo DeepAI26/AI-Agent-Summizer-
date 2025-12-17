@@ -289,7 +289,6 @@ function adminApp() {
             this.showDetailsModal = true;
         },
 
-
         // initialize on load
         init() {
             this.refreshAll();

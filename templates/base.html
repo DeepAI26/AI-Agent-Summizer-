@@ -25,6 +25,8 @@
                 <div class="flex items-center gap-4">
                     <!-- Desktop Navigation -->
                     <nav class="hidden md:flex gap-4 items-center text-sm text-gray-600">
+                        <a href="{{ url_for('index') }}" class="hover:text-gray-900 transition-colors">Home</a>
+                        <a href="{{ url_for('search_page') }}" class="hover:text-gray-900 transition-colors">🔍 Search</a>
                         <a href="{{ url_for('features') }}" class="hover:text-gray-900 transition-colors">Features</a>
                         <a href="{{ url_for('docs') }}" class="hover:text-gray-900 transition-colors">Docs</a>
                         <a href="{{ url_for('admin') }}" class="hover:text-gray-900 transition-colors">Admin</a>
@@ -70,6 +72,8 @@
                  x-transition:leave-end="opacity-0 transform -translate-y-2"
                  class="md:hidden mt-3 pb-3 border-t border-gray-200">
                 <nav class="flex flex-col space-y-2 mt-3">
+                    <a href="{{ url_for('index') }}" class="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded transition-colors">Home</a>
+                    <a href="{{ url_for('search_page') }}" class="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded transition-colors">🔍 Search</a>
                     <a href="{{ url_for('features') }}" class="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded transition-colors">Features</a>
                     <a href="{{ url_for('docs') }}" class="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded transition-colors">Docs</a>
                     <a href="{{ url_for('admin') }}" class="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded transition-colors">Admin</a>
@@ -96,7 +100,9 @@
 
     {% block content %}{% endblock %}
 
-
+    <script>
+        window.INITIAL_USER = {{ user|tojson | safe }};
+    </script>
     {% block scripts %}{% endblock %}
 </body>
 </html>

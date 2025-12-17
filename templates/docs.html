@@ -13,6 +13,7 @@
                     <nav class="space-y-2">
                         <a href="#getting-started" class="block px-3 py-2 rounded hover:bg-blue-50 text-blue-600 font-semibold">Getting Started</a>
                         <a href="#how-to-use" class="block px-3 py-2 rounded hover:bg-blue-50 text-gray-700">How to Use</a>
+                        <a href="#search-automation" class="block px-3 py-2 rounded hover:bg-blue-50 text-gray-700">Search & Automation</a>
                         <a href="#transcription" class="block px-3 py-2 rounded hover:bg-blue-50 text-gray-700">Transcription</a>
                         <a href="#summarization" class="block px-3 py-2 rounded hover:bg-blue-50 text-gray-700">Summarization</a>
                         <a href="#social-media" class="block px-3 py-2 rounded hover:bg-blue-50 text-gray-700">Social Media Posting</a>
@@ -29,7 +30,7 @@
                 <section id="getting-started" class="bg-white rounded-lg shadow-md p-8">
                     <h2 class="text-3xl font-bold text-gray-800 mb-4">Getting Started</h2>
                     <p class="text-gray-600 mb-4">Welcome to YouTube Video Summarizer! This guide will help you get up and running in minutes.</p>
-                    
+
                     <div class="space-y-4">
                         <div>
                             <h3 class="text-lg font-semibold text-gray-800 mb-2">Step 1: Sign In</h3>
@@ -53,7 +54,7 @@
                 <!-- How to Use -->
                 <section id="how-to-use" class="bg-white rounded-lg shadow-md p-8">
                     <h2 class="text-3xl font-bold text-gray-800 mb-4">How to Use</h2>
-                    
+
                     <div class="space-y-6">
                         <div class="border-l-4 border-blue-500 pl-4">
                             <h3 class="text-xl font-semibold text-gray-800 mb-2">Main Interface Overview</h3>
@@ -78,10 +79,76 @@
                     </div>
                 </section>
 
+                <!-- Search & Automation -->
+                <section id="search-automation" class="bg-white rounded-lg shadow-md p-8">
+                    <h2 class="text-3xl font-bold text-gray-800 mb-4">🔍 Search & Automation</h2>
+
+                    <p class="text-gray-600 mb-4">The Search & Automation feature allows you to discover YouTube videos by keywords and bulk-process multiple videos automatically.</p>
+
+                    <div class="bg-purple-50 border-l-4 border-purple-500 p-4 mb-4">
+                        <h4 class="font-semibold text-gray-800 mb-2">✨ Key Features</h4>
+                        <ul class="list-disc list-inside text-gray-700 space-y-1">
+                            <li>Search YouTube videos by keywords</li>
+                            <li>Advanced filters (duration, date, order)</li>
+                            <li>Bulk selection and processing</li>
+                            <li>Save and reuse search queries</li>
+                            <li>Processing queue management</li>
+                        </ul>
+                    </div>
+
+                    <div class="space-y-4">
+                        <div>
+                            <h4 class="font-semibold text-gray-800 mb-2">Basic Search</h4>
+                            <ol class="list-decimal list-inside text-gray-600 space-y-2 ml-2">
+                                <li>Navigate to the Search page from the main menu</li>
+                                <li>Enter your search keywords (e.g., "AI tutorial", "Python programming")</li>
+                                <li>Select the maximum number of results (5-25)</li>
+                                <li>Click "Search Videos" to see results</li>
+                            </ol>
+                        </div>
+
+                        <div>
+                            <h4 class="font-semibold text-gray-800 mb-2">Advanced Filters</h4>
+                            <p class="text-gray-600 mb-2">Click "Advanced Filters" to access additional options:</p>
+                            <ul class="list-disc list-inside text-gray-600 space-y-1 ml-2">
+                                <li><strong>Order By:</strong> Relevance, Upload Date, View Count, or Rating</li>
+                                <li><strong>Video Duration:</strong> Filter by short (&lt;4 min), medium (4-20 min), or long (&gt;20 min)</li>
+                                <li><strong>Published After:</strong> Only show videos uploaded after a specific date</li>
+                            </ul>
+                        </div>
+
+                        <div>
+                            <h4 class="font-semibold text-gray-800 mb-2">Processing Videos</h4>
+                            <p class="text-gray-600 mb-2">You can process videos individually or in bulk:</p>
+                            <ul class="list-disc list-inside text-gray-600 space-y-1 ml-2">
+                                <li><strong>Single Video:</strong> Click "Process Video" on any search result</li>
+                                <li><strong>Bulk Processing:</strong> Check multiple videos, then click "Process Selected"</li>
+                                <li>View progress in the Processing Queue section at the bottom</li>
+                            </ul>
+                        </div>
+
+                        <div>
+                            <h4 class="font-semibold text-gray-800 mb-2">Saving Search Queries</h4>
+                            <p class="text-gray-600 mb-2">Save frequently used searches for quick access:</p>
+                            <ol class="list-decimal list-inside text-gray-600 space-y-1 ml-2">
+                                <li>Configure your search parameters</li>
+                                <li>Click the "Save Query" button</li>
+                                <li>Your saved queries appear at the top of the page</li>
+                                <li>Click any saved query to reload those settings instantly</li>
+                            </ol>
+                        </div>
+
+                        <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                            <h4 class="font-semibold text-gray-800 mb-2">⚠️ API Limits</h4>
+                            <p class="text-gray-700 text-sm">YouTube API has daily quotas. If you encounter rate limits, try reducing the number of results or wait 24 hours. Bulk processing adds a 1-second delay between requests to avoid rate limiting.</p>
+                        </div>
+                    </div>
+                </section>
+
                 <!-- Transcription -->
                 <section id="transcription" class="bg-white rounded-lg shadow-md p-8">
                     <h2 class="text-3xl font-bold text-gray-800 mb-4">Video Transcription</h2>
-                    
+
                     <p class="text-gray-600 mb-4">The transcription feature converts video audio into text using AI-powered speech recognition.</p>
 
                     <div class="bg-blue-50 border-l-4 border-blue-500 p-4 mb-4">
@@ -108,7 +175,7 @@
                 <!-- Summarization -->
                 <section id="summarization" class="bg-white rounded-lg shadow-md p-8">
                     <h2 class="text-3xl font-bold text-gray-800 mb-4">Summarization</h2>
-                    
+
                     <p class="text-gray-600 mb-4">Summaries are generated using state-of-the-art AI models to extract the most important information from transcripts.</p>
 
                     <div class="bg-green-50 border-l-4 border-green-500 p-4 mb-4">
@@ -137,7 +204,7 @@
                 <!-- Social Media Posting -->
                 <section id="social-media" class="bg-white rounded-lg shadow-md p-8">
                     <h2 class="text-3xl font-bold text-gray-800 mb-4">Social Media Posting</h2>
-                    
+
                     <div class="space-y-6">
                         <div>
                             <h3 class="text-lg font-semibold text-gray-800 mb-2">Supported Platforms</h3>
@@ -180,7 +247,7 @@
                 <!-- Scheduling -->
                 <section id="scheduling" class="bg-white rounded-lg shadow-md p-8">
                     <h2 class="text-3xl font-bold text-gray-800 mb-4">Scheduling Posts</h2>
-                    
+
                     <p class="text-gray-600 mb-4">Schedule your social media posts to go live at a specific time, and let the system handle automatic posting.</p>
 
                     <div class="space-y-4">
@@ -209,7 +276,7 @@
                 <!-- Admin Dashboard -->
                 <section id="admin" class="bg-white rounded-lg shadow-md p-8">
                     <h2 class="text-3xl font-bold text-gray-800 mb-4">Admin Dashboard</h2>
-                    
+
                     <p class="text-gray-600 mb-4">The Admin Dashboard provides an overview of system activity, statistics, and management tools.</p>
 
                     <div class="space-y-6">
@@ -252,7 +319,7 @@
                 <!-- FAQ -->
                 <section id="faq" class="bg-white rounded-lg shadow-md p-8">
                     <h2 class="text-3xl font-bold text-gray-800 mb-4">Frequently Asked Questions</h2>
-                    
+
                     <div class="space-y-4">
                         <div class="border-b border-gray-200 pb-4">
                             <h3 class="font-semibold text-gray-800 mb-2">Q: What video sources are supported?</h3>
@@ -302,6 +369,5 @@
             </div>
         </div>
     </div>
-
 
 {% endblock %}
